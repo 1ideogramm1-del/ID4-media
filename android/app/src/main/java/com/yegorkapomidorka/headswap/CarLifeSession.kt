@@ -1289,6 +1289,7 @@ class CarLifeSession(
             return
         }
         val t = CarlifeTouch.parse(m.type, m.body) ?: return
+             if (CockpitRenderer.enabled) CockpitRenderer.dispatchTouch(t.masked, t.x, t.y)
         setTouchMode(
             if (m.type == Msg.TOUCH_ACTION) "TOUCH_ACTION (прозрачный, TRANSPARENT_SEND_TOUCH_EVENT=true)"
             else "жестовый (отдельные коды 0x68002..0x6800D)"
