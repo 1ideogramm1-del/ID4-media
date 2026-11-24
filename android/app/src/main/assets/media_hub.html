@@ -2,214 +2,233 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=1280, initial-scale=1.0, user-scalable=no">
 <title>ID4 Cockpit</title>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <style>
-  :root {
-    --bg: #07090e;
-    --panel: rgba(18, 23, 34, 0.86);
-    --border: rgba(255, 255, 255, 0.09);
-    --cyan: #00d4ff;
-    --red: #ff3b5c;
-    --text: #f3f6fb;
-    --muted: #8b98b0;
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+  html, body { width: 1280px; height: 720px; overflow: hidden; background: #070a10; color: #f1f5f9; }
+  body { display: flex; flex-direction: column; background: radial-gradient(circle at 50% 10%, #121c2e 0%, #070a10 68%); }
+
+  .top { height: 58px; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(7,10,16,0.85); }
+  .brand { font-size: 20px; font-weight: 900; letter-spacing: 2px; color: #00d4ff; }
+  .top-mid { display: flex; gap: 22px; font-size: 18px; font-weight: 700; color: #cbd5e1; }
+  .now-txt { font-size: 16px; color: #00d4ff; font-weight: 700; max-width: 360px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .main { flex: 1; position: relative; overflow: hidden; }
+  .view { display: none; width: 100%; height: 100%; }
+  .view.active { display: flex; flex-direction: column; }
+
+  /* COCKPIT */
+  .cockpit { flex: 1; display: grid; grid-template-columns: 1fr 1.35fr 1fr; gap: 22px; padding: 26px 32px; align-items: center; }
+  .wcard {
+    height: 100%; background: rgba(16, 23, 36, 0.85); border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
-  body { background: radial-gradient(circle at 50% 0%, #131b2b 0%, #07090e 70%); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-
-  /* TOP BAR */
-  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 10px 18px; border-bottom: 1px solid var(--border); background: rgba(7,9,14,0.8); }
-  .brand { font-size: 16px; font-weight: 900; letter-spacing: 1.5px; color: var(--cyan); }
-  .top-info { display: flex; gap: 14px; align-items: center; font-size: 14px; font-weight: 700; color: var(--muted); }
-  .top-info span { color: var(--text); }
-  .home-btn { background: rgba(0,212,255,0.14); color: var(--cyan); border: 1px solid rgba(0,212,255,0.35); padding: 6px 14px; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; }
-
-  /* MAIN AREA */
-  main { flex: 1; display: flex; overflow: hidden; position: relative; }
-  .view { display: none; width: 100%; height: 100%; flex-direction: column; }
-  .view.active { display: flex; }
-
-  /* COCKPIT DASHBOARD */
-  .cockpit { flex: 1; display: grid; grid-template-columns: 1fr 1.4fr 1fr; gap: 14px; padding: 16px; align-items: center; }
-  .widget {
-    background: var(--panel); border: 1px solid var(--border); border-radius: 20px;
-    padding: 18px; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+  .wlabel { font-size: 13px; letter-spacing: 2px; color: #64748b; margin-bottom: 18px; font-weight: 700; }
+  .ring-big {
+    width: 240px; height: 240px; border-radius: 50%;
+    border: 4px solid rgba(0,212,255,0.45);
+    box-shadow: 0 0 40px rgba(0,212,255,0.18), inset 0 0 28px rgba(0,0,0,0.8);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: radial-gradient(circle, #0e1624 55%, #06090f 100%);
   }
-  .w-label { font-size: 11px; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; }
+  .spd { font-size: 76px; font-weight: 900; line-height: 1; color: #fff; }
+  .unit { font-size: 18px; color: #00d4ff; font-weight: 700; margin-top: 6px; }
+  .safe { margin-top: 16px; font-size: 15px; color: #10b981; font-weight: 700; }
 
-  /* GAUGE */
-  .gauge {
-    width: 170px; height: 170px; border-radius: 50%;
-    background: radial-gradient(circle, #101624 58%, #07090e 100%);
-    border: 3px solid rgba(0,212,255,0.28);
-    box-shadow: 0 0 28px rgba(0,212,255,0.12), inset 0 0 20px rgba(0,0,0,0.8);
-    display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;
+  .ring-sm {
+    width: 175px; height: 175px; border-radius: 50%;
+    border: 3px solid rgba(255,255,255,0.16);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
   }
-  .speed-num { font-size: 52px; font-weight: 900; color: #fff; line-height: 1; }
-  .speed-unit { font-size: 13px; color: var(--cyan); font-weight: 700; margin-top: 4px; }
+  .deg { font-size: 44px; font-weight: 800; color: #00d4ff; }
+  .dir { font-size: 16px; color: #94a3b8; font-weight: 700; margin-top: 4px; }
 
-  /* COMPASS */
-  .compass {
-    width: 120px; height: 120px; border-radius: 50%;
-    border: 2px solid rgba(255,255,255,0.16);
-    display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;
-  }
-  .compass-deg { font-size: 28px; font-weight: 800; color: var(--cyan); }
-  .compass-dir { font-size: 12px; color: var(--muted); font-weight: 700; }
+  .temp { font-size: 64px; font-weight: 900; color: #fff; }
+  .city { font-size: 20px; color: #00d4ff; font-weight: 700; margin-top: 8px; }
 
-  /* WEATHER */
-  .temp-big { font-size: 42px; font-weight: 900; color: #fff; }
-  .city-name { font-size: 14px; color: var(--cyan); font-weight: 700; margin-top: 4px; }
-  .status-ok { margin-top: 10px; font-size: 12px; color: #10b981; font-weight: 700; }
+  /* LIST VIEWS */
+  .subbar { display: flex; gap: 12px; padding: 14px 24px; background: rgba(12,18,28,0.9); border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .pill { background: #162235; color: #e2e8f0; border: 1px solid rgba(255,255,255,0.12); padding: 10px 22px; border-radius: 14px; font-size: 16px; font-weight: 700; cursor: pointer; }
+  .grid { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; padding: 18px 24px; overflow-y: auto; }
+  .item { background: #121c2d; border: 1px solid rgba(255,255,255,0.09); border-radius: 16px; padding: 18px; cursor: pointer; }
+  .item.on { border-color: #00d4ff; background: rgba(0,212,255,0.14); }
+  .it-t { font-size: 17px; font-weight: 700; }
+  .it-s { font-size: 13px; color: #94a3b8; margin-top: 6px; }
+  video { width: 100%; height: 320px; background: #000; }
+  iframe { width: 100%; height: 100%; border: none; background: #000; }
 
   /* BOTTOM DOCK */
-  .dock {
-    display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px;
-    padding: 10px 14px; background: rgba(10, 14, 22, 0.94); border-top: 1px solid var(--border);
+  .dock { height: 102px; display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; padding: 12px 24px; background: rgba(10, 14, 22, 0.96); border-top: 1px solid rgba(255,255,255,0.09); }
+  .dbtn {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px;
+    color: #cbd5e1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
   }
-  .dock-btn {
-    background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 14px;
-    padding: 10px 4px; color: var(--text); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px;
-    font-size: 11px; font-weight: 700; transition: 0.15s;
-  }
-  .dock-btn .ico { font-size: 20px; }
-  .dock-btn.active, .dock-btn:active { border-color: var(--cyan); background: rgba(0,212,255,0.14); color: var(--cyan); }
-  .dock-btn.aa { border-color: rgba(16,185,129,0.45); background: rgba(16,185,129,0.12); }
-
-  /* SUB PANELS */
-  .bar { display: flex; gap: 8px; padding: 10px 14px; overflow-x: auto; align-items: center; border-bottom: 1px solid var(--border); }
-  .chip { background: rgba(255,255,255,0.07); color: #fff; border: 1px solid var(--border); padding: 8px 14px; border-radius: 18px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
-  input { flex: 1; min-width: 140px; background: rgba(255,255,255,0.07); border: 1px solid var(--border); color: #fff; padding: 9px 12px; border-radius: 12px; font-size: 14px; outline: none; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; padding: 12px 14px; overflow-y: auto; flex: 1; }
-  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 14px; cursor: pointer; }
-  .card:active, .card.playing { border-color: var(--cyan); background: rgba(0,212,255,0.12); }
-  .card-title { font-size: 14px; font-weight: 700; }
-  .card-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
-  video { width: 100%; max-height: 46vh; background: #000; }
-  iframe { width: 100%; height: 100%; border: none; background: #000; }
-  .mini-player { display: flex; align-items: center; gap: 10px; padding: 6px 14px; background: #0c121e; border-top: 1px solid var(--border); }
-  #nowPlaying { flex: 1; font-size: 13px; font-weight: 700; color: var(--cyan); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  audio { height: 32px; max-width: 210px; }
-
-  @media (max-width: 650px) {
-    .cockpit { grid-template-columns: 1fr; overflow-y: auto; }
-    .gauge { width: 140px; height: 140px; }
-    .speed-num { font-size: 40px; }
-  }
+  .dbtn svg { width: 28px; height: 28px; stroke: currentColor; fill: none; stroke-width: 2; }
+  .dbtn.active { border-color: #00d4ff; background: rgba(0,212,255,0.16); color: #00d4ff; }
+  .dbtn.aa { border-color: rgba(16,185,129,0.5); background: rgba(16,185,129,0.14); color: #34d399; }
 </style>
 </head>
 <body>
-<div class="topbar">
+<div class="top">
   <div class="brand">ID4 COCKPIT</div>
-  <div class="top-info">
-    <span id="clock">--:--</span>
-    <span id="topTemp">--°C</span>
-  </div>
-  <button class="home-btn" onclick="openView('home', null)">🏠 الرئيسية</button>
+  <div class="top-mid"><span id="clk">--:--</span><span id="ttmp">--°C</span></div>
+  <div class="now-txt" id="now">ID4 Media جاهز</div>
 </div>
 
-<main>
-  <!-- 1. COCKPIT HOME -->
-  <section id="home" class="view active">
+<div class="main">
+  <section id="v-home" class="view active">
     <div class="cockpit">
-      <div class="widget">
-        <div class="w-label">DIRECTION • الاتجاه</div>
-        <div class="compass">
-          <div class="compass-deg" id="heading">--°</div>
-          <div class="compass-dir" id="headingDir">GPS</div>
-        </div>
+      <div class="wcard">
+        <div class="wlabel">DIRECTION</div>
+        <div class="ring-sm"><div class="deg" id="hdg">--°</div><div class="dir" id="hdir">GPS</div></div>
       </div>
-
-      <div class="widget">
-        <div class="w-label">SPEED • السرعة</div>
-        <div class="gauge">
-          <div class="speed-num" id="speed">0</div>
-          <div class="speed-unit">km/h</div>
-        </div>
-        <div class="status-ok">✓ Drive Safely • قيادة آمنة</div>
+      <div class="wcard">
+        <div class="wlabel">SPEED</div>
+        <div class="ring-big"><div class="spd" id="spd">0</div><div class="unit">km/h</div></div>
+        <div class="safe">✓ Drive Safely</div>
       </div>
-
-      <div class="widget">
-        <div class="w-label">OUTSIDE • الطقس</div>
-        <div class="temp-big" id="weatherTemp">--°C</div>
-        <div class="city-name" id="weatherCity">Amman • عمّان</div>
+      <div class="wcard">
+        <div class="wlabel">WEATHER</div>
+        <div class="temp" id="wtmp">--°C</div>
+        <div class="city">Amman</div>
       </div>
     </div>
   </section>
 
-  <!-- 2. RADIO -->
-  <section id="radio" class="view">
-    <div class="bar">
-      <button class="chip" onclick="loadRadio('Jordan')">🇯🇴 الأردن</button>
-      <button class="chip" onclick="loadRadio('Egypt')">🇪🇬 مصر</button>
-      <button class="chip" onclick="loadRadio('Saudi Arabia')">🇸🇦 السعودية</button>
-      <button class="chip" onclick="loadRadio('top')">🌍 عالمي</button>
-      <input id="radioSearch" placeholder="ابحث عن إذاعة..." onkeydown="if(event.key==='Enter') searchRadio()">
+  <section id="v-radio" class="view">
+    <div class="subbar">
+      <button class="pill" onclick="loadRadio('Jordan')">الأردن</button>
+      <button class="pill" onclick="loadRadio('Egypt')">مصر</button>
+      <button class="pill" onclick="loadRadio('Saudi Arabia')">السعودية</button>
+      <button class="pill" onclick="loadRadio('top')">عالمي</button>
     </div>
-    <div id="radioGrid" class="grid"></div>
+    <div class="grid" id="rgrid"></div>
   </section>
 
-  <!-- 3. QURAN -->
-  <section id="quran" class="view">
-    <div class="bar"><div style="font-weight:700;color:#00d4ff">📖 إذاعات القرآن الكريم المباشرة</div></div>
-    <div id="quranGrid" class="grid"></div>
+  <section id="v-quran" class="view">
+    <div class="grid" id="qgrid"></div>
   </section>
 
-  <!-- 4. IPTV -->
-  <section id="iptv" class="view">
-    <div class="bar">
-      <input id="m3uUrl" placeholder="أضف رابط M3U8 مباشر...">
-      <button class="chip" onclick="playCustomStream()">تشغيل</button>
-      <button class="chip" onclick="loadFreeIptv()">قنوات مجانية</button>
-    </div>
-    <video id="tvPlayer" controls playsinline></video>
-    <div id="tvGrid" class="grid"></div>
+  <section id="v-tv" class="view">
+    <video id="tvp" autoplay playsinline></video>
+    <div class="grid" id="tgrid"></div>
   </section>
 
-  <!-- 5. YOUTUBE -->
-  <section id="youtube" class="view">
-    <iframe src="https://m.youtube.com" allow="autoplay; fullscreen; encrypted-media"></iframe>
+  <section id="v-yt" class="view">
+    <iframe src="https://m.youtube.com" allow="autoplay; fullscreen"></iframe>
   </section>
 
-  <!-- 6. BROWSER -->
-  <section id="browser" class="view">
-    <div class="bar">
-      <input id="webUrl" value="https://www.google.com" onkeydown="if(event.key==='Enter') goWeb()">
-      <button class="chip" onclick="goWeb()">فتح</button>
-    </div>
-    <iframe id="webFrame" src="https://www.google.com"></iframe>
+  <section id="v-web" class="view">
+    <iframe src="https://www.google.com"></iframe>
   </section>
-</main>
-
-<div class="mini-player">
-  <div id="nowPlaying">✨ ID4 Media جاهز</div>
-  <audio id="audioPlayer" controls></audio>
 </div>
+
+<audio id="aud"></audio>
 
 <div class="dock">
-  <button class="dock-btn aa" onclick="if(window.Android) Android.openBridge();"><span class="ico">🚗</span>App Connect</button>
-  <button class="dock-btn" onclick="openView('radio', this)"><span class="ico">📻</span>راديو</button>
-  <button class="dock-btn" onclick="openView('youtube', this)"><span class="ico">▶️</span>يوتيوب</button>
-  <button class="dock-btn" onclick="openView('browser', this)"><span class="ico">🌐</span>متصفح</button>
-  <button class="dock-btn" onclick="openView('quran', this)"><span class="ico">📖</span>قرآن</button>
-  <button class="dock-btn" onclick="openView('iptv', this)"><span class="ico">📺</span>TV</button>
-  <button class="dock-btn active" onclick="openView('home', this)"><span class="ico">🧭</span>العداد</button>
+  <button class="dbtn active" onclick="go('v-home',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>العداد</button>
+  <button class="dbtn" onclick="go('v-radio',this)"><svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M7 8l10-4"/></svg>راديو</button>
+  <button class="dbtn" onclick="go('v-quran',this)"><svg viewBox="0 0 24 24"><path d="M4 5h7a3 3 0 0 1 3 3v11a2 2 0 0 0-2-2H4z"/><path d="M20 5h-7a3 3 0 0 0-3 3v11a2 2 0 0 1 2-2h8z"/></svg>قرآن</button>
+  <button class="dbtn" onclick="go('v-yt',this)"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="3"/><polygon points="10,9 16,12 10,15" fill="currentColor"/></svg>يوتيوب</button>
+  <button class="dbtn" onclick="go('v-tv',this)"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg>TV</button>
+  <button class="dbtn" onclick="go('v-web',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>متصفح</button>
+  <button class="dbtn aa" onclick="if(window.CarBridge) CarBridge.switchToAA();"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>App Connect</button>
 </div>
 
 <script>
 let hls = null;
-function openView(id, btn) {
+window.__carTap = function(x, y) {
+  const el = document.elementFromPoint(x, y);
+  if (el) el.click();
+};
+function go(id, btn) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.querySelectorAll('.dock-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.dbtn').forEach(b => b.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if (btn) btn.classList.add('active');
 }
-
-// Clock
-function tick() {
-  const d = new Date();
-  document.getElementById('clock').textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+setInterval(() => {
+  document.getElementById('clk').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}, 1000);
+fetch('https://api.open-meteo.com/v1/forecast?latitude=31.9539&longitude=35.9106&current_weather=true')
+  .then(r => r.json()).then(j => {
+    const t = Math.round(j.current_weather.temperature) + '°C';
+    document.getElementById('wtmp').textContent = t;
+    document.getElementById('ttmp').textContent = t;
+  }).catch(() => {});
+if (navigator.geolocation) {
+  navigator.geolocation.watchPosition(p => {
+    document.getElementById('spd').textContent = p.coords.speed ? Math.round(p.coords.speed * 3.6) : 0;
+    if (p.coords.heading != null && !isNaN(p.coords.heading)) {
+      const h = Math.round(p.coords.heading);
+      document.getElementById('hdg').textContent = h + '°';
+      document.getElementById('hdir').textContent = ['N','NE','E','SE','S','SW','W','NW'][Math.round(h/45)%8];
+    }
+  }, () => {}, { enableHighAccuracy: true });
+}
+function playAud(name, url, el) {
+  document.querySelectorAll('.item').forEach(i => i.classList.remove('on'));
+  if (el) el.classList.add('on');
+  const a = document.getElementById('aud'); a.src = url; a.play();
+  document.getElementById('now').textContent = name;
+}
+function loadRadio(c) {
+  const g = document.getElementById('rgrid'); g.innerHTML = 'جاري التحميل...';
+  const u = c === 'top' ? 'https://de1.api.radio-browser.info/json/stations/topvote/24'
+    : 'https://de1.api.radio-browser.info/json/stations/bycountry/' + encodeURIComponent(c) + '?limit=24&order=votes&reverse=true';
+  fetch(u).then(r => r.json()).then(list => {
+    g.innerHTML = '';
+    list.filter(s => s.url_resolved).forEach(s => {
+      const d = document.createElement('div'); d.className = 'item';
+      d.innerHTML = '<div class="it-t">' + s.name + '</div><div class="it-s">' + (s.country || '') + '</div>';
+      d.onclick = () => playAud(s.name, s.url_resolved, d);
+      g.appendChild(d);
+    });
+  }).catch(() => { g.innerHTML = 'تأكد من الإنترنت'; });
+}
+[
+  ['إذاعة القرآن - مكة', 'https://backup.qurango.net/radio/tarateel'],
+  ['مشاري العفاسي', 'https://backup.qurango.net/radio/mishary_alafasi'],
+  ['ماهر المعيقلي', 'https://backup.qurango.net/radio/maher'],
+  ['عبد الباسط عبد الصمد', 'https://backup.qurango.net/radio/abdulbasit_abdulsamad_mojawwad'],
+  ['سعد الغامدي', 'https://backup.qurango.net/radio/saad_alghamdi'],
+  ['ياسر الدوسري', 'https://backup.qurango.net/radio/yasser_aldosari']
+].forEach(q => {
+  const d = document.createElement('div'); d.className = 'item';
+  d.innerHTML = '<div class="it-t">' + q[0] + '</div><div class="it-s">بث مباشر</div>';
+  d.onclick = () => playAud(q[0], q[1], d);
+  document.getElementById('qgrid').appendChild(d);
+});
+function playTv(url, name) {
+  const v = document.getElementById('tvp');
+  if (hls) { hls.destroy(); hls = null; }
+  if (Hls.isSupported()) { hls = new Hls(); hls.loadSource(url); hls.attachMedia(v); hls.on(Hls.Events.MANIFEST_PARSED, () => v.play()); }
+  else { v.src = url; v.play(); }
+  document.getElementById('now').textContent = name;
+}
+fetch('https://iptv-org.github.io/iptv/languages/ara.m3u').then(r => r.text()).then(txt => {
+  const lines = txt.split('\n'), g = document.getElementById('tgrid');
+  let n = 0;
+  for (let i = 0; i < lines.length && n < 24; i++) {
+    if (lines[i].startsWith('#EXTINF:')) {
+      const name = lines[i].split(',').pop().trim(), url = (lines[i+1] || '').trim();
+      if (url.startsWith('http')) {
+        n++;
+        const d = document.createElement('div'); d.className = 'item';
+        d.innerHTML = '<div class="it-t">' + name + '</div><div class="it-s">بث مباشر</div>';
+        d.onclick = () => playTv(url, name);
+        g.appendChild(d);
+      }
+    }
+  }
+}).catch(() => {});
+loadRadio('Jordan');
+</script>
+</body>
+</html>eString([], { hour: '2-digit', minute: '2-digit' });
 }
 setInterval(tick, 1000); tick();
 
