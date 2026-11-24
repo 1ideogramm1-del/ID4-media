@@ -16,7 +16,7 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.yegorkapomidorka.headswap"
+        applicationId = "com.id4media.hub"
         minSdk = 29
         targetSdk = 37
         versionCode = 77
