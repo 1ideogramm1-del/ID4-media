@@ -9,6 +9,7 @@ import android.os.Looper
 import android.os.SystemClock
 import android.view.MotionEvent
 import android.view.View
+import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -38,6 +39,12 @@ object CockpitRenderer {
             }
             wv.webViewClient = WebViewClient()
             wv.webChromeClient = WebChromeClient()
+            wv.addJavascriptInterface(object {
+                @JavascriptInterface
+                fun switchToAA() {
+                    enabled = false
+                }
+            }, "CarBridge")
             wv.measure(
                 View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
                 View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.EXACTLY)
@@ -82,6 +89,9 @@ object CockpitRenderer {
             val ev = MotionEvent.obtain(downTime, now, action, fx, fy, 0)
             wv.dispatchTouchEvent(ev)
             ev.recycle()
+            if (action == MotionEvent.ACTION_UP) {
+                wv.evaluateJavascript("if(window.__carTap) window.__carTap($x, $y);", null)
+            }
         }
     }
 }
