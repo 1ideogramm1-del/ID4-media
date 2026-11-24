@@ -53,6 +53,11 @@ object CockpitRenderer {
             wv.loadUrl("file:///android_asset/media_hub.html")
             webView = wv
             scheduleCapture()
+                        ObdReader.start { soc, range ->
+                main.post {
+                    webView?.evaluateJavascript("if(window.__setBattery) window.__setBattery($soc, $range);", null)
+                }
+                        }
         }
     }
 
