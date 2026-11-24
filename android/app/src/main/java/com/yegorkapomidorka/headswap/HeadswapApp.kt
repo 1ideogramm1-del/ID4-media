@@ -8,6 +8,7 @@ import com.yegorkapomidorka.headswap.dex.VdmDesktop
 class HeadswapApp : Application() {
     override fun onCreate() {
         super.onCreate()
+             CockpitRenderer.init(this, 1280, 720)
         // onCreate зовётся в каждом процессе приложения (main, :delegated), флаг VDM-хоста нужен в каждом
         VdmDesktop.loadOptIn(this)
         // current() создаёт токен через синхронный commit(): не на главном потоке
