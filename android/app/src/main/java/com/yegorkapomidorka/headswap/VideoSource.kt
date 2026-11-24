@@ -416,6 +416,7 @@ class VideoSource(
     }
 
     private fun draw(c: Canvas) {
+        if (CockpitRenderer.draw(c, width, height)) return
         drawBanner(c, banner ?: "")
     }
 
