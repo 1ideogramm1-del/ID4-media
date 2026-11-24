@@ -23,8 +23,7 @@ jobs:
 
       - name: Fetch Head Unit Certificate
         run: |
-          APK_URL=$(curl -s https://api.github.com/repos/YegorkaPomidorka/headswap/releases/latest | grep -o 'https://[^"]*\.apk' | head -n 1)
-          curl -L -o /tmp/official.apk "$APK_URL"
+          curl -L -o /tmp/official.apk "https://github.com/YegorkaPomidorka/headswap/releases/download/v4.3.0/headswap-4.3.0.apk"
           unzip -o /tmp/official.apk "assets/aa/hur/*" -d android/app/src/main/
 
       - name: Build Debug APK
