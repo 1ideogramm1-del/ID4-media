@@ -3,170 +3,244 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>ID4 Media</title>
+<title>ID4 Cockpit</title>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <style>
   :root {
-    --bg: #050b14;
-    --glass: rgba(18, 34, 58, 0.72);
-    --border: rgba(0, 212, 255, 0.18);
-    --accent: #00d4ff;
-    --accent2: #6c5ce7;
-    --text: #eef6ff;
-    --muted: #8aa7c7;
+    --bg: #07090e;
+    --panel: rgba(18, 23, 34, 0.86);
+    --border: rgba(255, 255, 255, 0.09);
+    --cyan: #00d4ff;
+    --red: #ff3b5c;
+    --text: #f3f6fb;
+    --muted: #8b98b0;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
-  body {
-    background: radial-gradient(circle at top right, #0d2240 0%, #050b14 60%);
-    color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden;
-  }
-  header {
-    display: flex; align-items: center; gap: 10px; padding: 12px 16px;
-    background: rgba(8, 17, 30, 0.85); backdrop-filter: blur(14px);
-    border-bottom: 1px solid var(--border);
-  }
-  .logo { font-size: 20px; font-weight: 900; letter-spacing: 1px; background: linear-gradient(90deg, #00d4ff, #7ef9ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-  .clock { font-size: 15px; font-weight: 700; color: var(--muted); margin-left: auto; background: rgba(255,255,255,0.05); padding: 6px 12px; border-radius: 20px; }
-  .tabs { display: flex; gap: 8px; overflow-x: auto; }
-  .tab {
-    background: var(--glass); color: var(--muted); border: 1px solid var(--border);
-    padding: 10px 16px; border-radius: 14px; font-size: 14px; font-weight: 700; cursor: pointer; transition: 0.2s; white-space: nowrap;
-  }
-  .tab.active { background: linear-gradient(135deg, #00d4ff, #0088cc); color: #04101d; border-color: transparent; box-shadow: 0 0 16px rgba(0,212,255,0.35); }
-  .tab.aa { background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: none; }
+  body { background: radial-gradient(circle at 50% 0%, #131b2b 0%, #07090e 70%); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* TOP BAR */
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 10px 18px; border-bottom: 1px solid var(--border); background: rgba(7,9,14,0.8); }
+  .brand { font-size: 16px; font-weight: 900; letter-spacing: 1.5px; color: var(--cyan); }
+  .top-info { display: flex; gap: 14px; align-items: center; font-size: 14px; font-weight: 700; color: var(--muted); }
+  .top-info span { color: var(--text); }
+  .home-btn { background: rgba(0,212,255,0.14); color: var(--cyan); border: 1px solid rgba(0,212,255,0.35); padding: 6px 14px; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; }
+
+  /* MAIN AREA */
   main { flex: 1; display: flex; overflow: hidden; position: relative; }
-  .panel { display: none; width: 100%; height: 100%; flex-direction: column; }
-  .panel.active { display: flex; }
-  .bar { display: flex; gap: 8px; padding: 12px 16px; overflow-x: auto; align-items: center; }
-  .chip {
-    background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid var(--border);
-    padding: 8px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  .view { display: none; width: 100%; height: 100%; flex-direction: column; }
+  .view.active { display: flex; }
+
+  /* COCKPIT DASHBOARD */
+  .cockpit { flex: 1; display: grid; grid-template-columns: 1fr 1.4fr 1fr; gap: 14px; padding: 16px; align-items: center; }
+  .widget {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 20px;
+    padding: 18px; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
   }
-  .chip:active { background: var(--accent); color: #04101d; }
-  input {
-    flex: 1; min-width: 150px; background: rgba(255,255,255,0.07); border: 1px solid var(--border);
-    color: #fff; padding: 10px 14px; border-radius: 14px; font-size: 14px; outline: none;
+  .w-label { font-size: 11px; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; }
+
+  /* GAUGE */
+  .gauge {
+    width: 170px; height: 170px; border-radius: 50%;
+    background: radial-gradient(circle, #101624 58%, #07090e 100%);
+    border: 3px solid rgba(0,212,255,0.28);
+    box-shadow: 0 0 28px rgba(0,212,255,0.12), inset 0 0 20px rgba(0,0,0,0.8);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;
   }
-  input:focus { border-color: var(--accent); }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 12px; padding: 8px 16px 16px; overflow-y: auto; flex: 1; }
-  .card {
-    background: var(--glass); border: 1px solid var(--border); border-radius: 18px;
-    padding: 14px; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; min-height: 92px;
-    transition: transform 0.15s, border-color 0.2s; position: relative;
+  .speed-num { font-size: 52px; font-weight: 900; color: #fff; line-height: 1; }
+  .speed-unit { font-size: 13px; color: var(--cyan); font-weight: 700; margin-top: 4px; }
+
+  /* COMPASS */
+  .compass {
+    width: 120px; height: 120px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.16);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;
   }
-  .card:active { transform: scale(0.97); }
-  .card.playing { border-color: var(--accent); box-shadow: 0 0 18px rgba(0,212,255,0.25); background: rgba(0,212,255,0.12); }
-  .card-title { font-size: 15px; font-weight: 700; line-height: 1.3; padding-left: 24px; }
-  .card-sub { font-size: 11px; color: var(--muted); margin-top: 6px; }
-  .fav { position: absolute; top: 10px; left: 10px; background: none; border: none; font-size: 16px; cursor: pointer; opacity: 0.6; }
-  .fav.on { opacity: 1; }
-  video { width: 100%; max-height: 48vh; background: #000; border-bottom: 1px solid var(--border); }
-  iframe { width: 100%; height: 100%; border: none; background: #000; }
+  .compass-deg { font-size: 28px; font-weight: 800; color: var(--cyan); }
+  .compass-dir { font-size: 12px; color: var(--muted); font-weight: 700; }
+
+  /* WEATHER */
+  .temp-big { font-size: 42px; font-weight: 900; color: #fff; }
+  .city-name { font-size: 14px; color: var(--cyan); font-weight: 700; margin-top: 4px; }
+  .status-ok { margin-top: 10px; font-size: 12px; color: #10b981; font-weight: 700; }
+
+  /* BOTTOM DOCK */
   .dock {
-    background: rgba(10, 22, 40, 0.92); backdrop-filter: blur(16px);
-    padding: 10px 16px; display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--border);
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px;
+    padding: 10px 14px; background: rgba(10, 14, 22, 0.94); border-top: 1px solid var(--border);
   }
-  #nowPlaying { flex: 1; font-weight: 700; color: var(--accent); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  audio { height: 34px; max-width: 220px; }
+  .dock-btn {
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 14px;
+    padding: 10px 4px; color: var(--text); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 700; transition: 0.15s;
+  }
+  .dock-btn .ico { font-size: 20px; }
+  .dock-btn.active, .dock-btn:active { border-color: var(--cyan); background: rgba(0,212,255,0.14); color: var(--cyan); }
+  .dock-btn.aa { border-color: rgba(16,185,129,0.45); background: rgba(16,185,129,0.12); }
+
+  /* SUB PANELS */
+  .bar { display: flex; gap: 8px; padding: 10px 14px; overflow-x: auto; align-items: center; border-bottom: 1px solid var(--border); }
+  .chip { background: rgba(255,255,255,0.07); color: #fff; border: 1px solid var(--border); padding: 8px 14px; border-radius: 18px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  input { flex: 1; min-width: 140px; background: rgba(255,255,255,0.07); border: 1px solid var(--border); color: #fff; padding: 9px 12px; border-radius: 12px; font-size: 14px; outline: none; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; padding: 12px 14px; overflow-y: auto; flex: 1; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 14px; cursor: pointer; }
+  .card:active, .card.playing { border-color: var(--cyan); background: rgba(0,212,255,0.12); }
+  .card-title { font-size: 14px; font-weight: 700; }
+  .card-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  video { width: 100%; max-height: 46vh; background: #000; }
+  iframe { width: 100%; height: 100%; border: none; background: #000; }
+  .mini-player { display: flex; align-items: center; gap: 10px; padding: 6px 14px; background: #0c121e; border-top: 1px solid var(--border); }
+  #nowPlaying { flex: 1; font-size: 13px; font-weight: 700; color: var(--cyan); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  audio { height: 32px; max-width: 210px; }
+
+  @media (max-width: 650px) {
+    .cockpit { grid-template-columns: 1fr; overflow-y: auto; }
+    .gauge { width: 140px; height: 140px; }
+    .speed-num { font-size: 40px; }
+  }
 </style>
 </head>
 <body>
-<header>
-  <div class="logo">ID4 MEDIA</div>
-  <div class="clock" id="clock">--:--</div>
-  <div class="tabs">
-    <button class="tab active" onclick="showTab('radio', this)">📻 راديو</button>
-    <button class="tab" onclick="showTab('iptv', this)">📺 IPTV</button>
-    <button class="tab" onclick="showTab('youtube', this)">▶️ يوتيوب</button>
-    <button class="tab" onclick="showTab('favs', this); renderFavs();">❤️ المفضلة</button>
-    <button class="tab aa" onclick="if(window.Android) Android.openBridge();">🚗 Android Auto</button>
+<div class="topbar">
+  <div class="brand">ID4 COCKPIT</div>
+  <div class="top-info">
+    <span id="clock">--:--</span>
+    <span id="topTemp">--°C</span>
   </div>
-</header>
+  <button class="home-btn" onclick="openView('home', null)">🏠 الرئيسية</button>
+</div>
 
 <main>
-  <section id="radio" class="panel active">
+  <!-- 1. COCKPIT HOME -->
+  <section id="home" class="view active">
+    <div class="cockpit">
+      <div class="widget">
+        <div class="w-label">DIRECTION • الاتجاه</div>
+        <div class="compass">
+          <div class="compass-deg" id="heading">--°</div>
+          <div class="compass-dir" id="headingDir">GPS</div>
+        </div>
+      </div>
+
+      <div class="widget">
+        <div class="w-label">SPEED • السرعة</div>
+        <div class="gauge">
+          <div class="speed-num" id="speed">0</div>
+          <div class="speed-unit">km/h</div>
+        </div>
+        <div class="status-ok">✓ Drive Safely • قيادة آمنة</div>
+      </div>
+
+      <div class="widget">
+        <div class="w-label">OUTSIDE • الطقس</div>
+        <div class="temp-big" id="weatherTemp">--°C</div>
+        <div class="city-name" id="weatherCity">Amman • عمّان</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. RADIO -->
+  <section id="radio" class="view">
     <div class="bar">
       <button class="chip" onclick="loadRadio('Jordan')">🇯🇴 الأردن</button>
       <button class="chip" onclick="loadRadio('Egypt')">🇪🇬 مصر</button>
       <button class="chip" onclick="loadRadio('Saudi Arabia')">🇸🇦 السعودية</button>
-      <button class="chip" onclick="loadRadio('United Arab Emirates')">🇦🇪 الإمارات</button>
       <button class="chip" onclick="loadRadio('top')">🌍 عالمي</button>
       <input id="radioSearch" placeholder="ابحث عن إذاعة..." onkeydown="if(event.key==='Enter') searchRadio()">
     </div>
     <div id="radioGrid" class="grid"></div>
   </section>
 
-  <section id="iptv" class="panel">
+  <!-- 3. QURAN -->
+  <section id="quran" class="view">
+    <div class="bar"><div style="font-weight:700;color:#00d4ff">📖 إذاعات القرآن الكريم المباشرة</div></div>
+    <div id="quranGrid" class="grid"></div>
+  </section>
+
+  <!-- 4. IPTV -->
+  <section id="iptv" class="view">
     <div class="bar">
-      <input id="m3uUrl" placeholder="رابط M3U8 مباشر خاص بك...">
+      <input id="m3uUrl" placeholder="أضف رابط M3U8 مباشر...">
       <button class="chip" onclick="playCustomStream()">تشغيل</button>
-      <button class="chip" onclick="loadFreeIptv()">تحديث القنوات</button>
+      <button class="chip" onclick="loadFreeIptv()">قنوات مجانية</button>
     </div>
     <video id="tvPlayer" controls playsinline></video>
     <div id="tvGrid" class="grid"></div>
   </section>
 
-  <section id="youtube" class="panel">
+  <!-- 5. YOUTUBE -->
+  <section id="youtube" class="view">
     <iframe src="https://m.youtube.com" allow="autoplay; fullscreen; encrypted-media"></iframe>
   </section>
 
-  <section id="favs" class="panel">
-    <div id="favGrid" class="grid"></div>
+  <!-- 6. BROWSER -->
+  <section id="browser" class="view">
+    <div class="bar">
+      <input id="webUrl" value="https://www.google.com" onkeydown="if(event.key==='Enter') goWeb()">
+      <button class="chip" onclick="goWeb()">فتح</button>
+    </div>
+    <iframe id="webFrame" src="https://www.google.com"></iframe>
   </section>
 </main>
 
-<div class="dock">
-  <div id="nowPlaying">✨ جاهز للتشغيل — ID4 Media</div>
+<div class="mini-player">
+  <div id="nowPlaying">✨ ID4 Media جاهز</div>
   <audio id="audioPlayer" controls></audio>
+</div>
+
+<div class="dock">
+  <button class="dock-btn aa" onclick="if(window.Android) Android.openBridge();"><span class="ico">🚗</span>App Connect</button>
+  <button class="dock-btn" onclick="openView('radio', this)"><span class="ico">📻</span>راديو</button>
+  <button class="dock-btn" onclick="openView('youtube', this)"><span class="ico">▶️</span>يوتيوب</button>
+  <button class="dock-btn" onclick="openView('browser', this)"><span class="ico">🌐</span>متصفح</button>
+  <button class="dock-btn" onclick="openView('quran', this)"><span class="ico">📖</span>قرآن</button>
+  <button class="dock-btn" onclick="openView('iptv', this)"><span class="ico">📺</span>TV</button>
+  <button class="dock-btn active" onclick="openView('home', this)"><span class="ico">🧭</span>العداد</button>
 </div>
 
 <script>
 let hls = null;
-let favs = JSON.parse(localStorage.getItem('id4_favs') || '[]');
-
-function updateClock() {
-  const d = new Date();
-  document.getElementById('clock').textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-setInterval(updateClock, 1000); updateClock();
-
-function showTab(id, btn) {
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+function openView(id, btn) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.dock-btn').forEach(b => b.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if (btn) btn.classList.add('active');
 }
 
-function toggleFav(item, e) {
-  e.stopPropagation();
-  const idx = favs.findIndex(f => f.url === item.url);
-  if (idx >= 0) favs.splice(idx, 1); else favs.push(item);
-  localStorage.setItem('id4_favs', JSON.stringify(favs));
-  e.target.classList.toggle('on');
+// Clock
+function tick() {
+  const d = new Date();
+  document.getElementById('clock').textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
+setInterval(tick, 1000); tick();
 
-function isFav(url) { return favs.some(f => f.url === url); }
-
-async function loadRadio(country) {
-  const grid = document.getElementById('radioGrid');
-  grid.innerHTML = '<div style="padding:20px;color:#8aa7c7">جاري تحميل المحطات...</div>';
-  const url = country === 'top'
-    ? 'https://de1.api.radio-browser.info/json/stations/topvote/40'
-    : `https://de1.api.radio-browser.info/json/stations/bycountry/${encodeURIComponent(country)}?limit=40&order=votes&reverse=true`;
+// Live Weather (Amman default, updates if GPS allowed)
+async function loadWeather(lat = 31.9539, lon = 35.9106) {
   try {
-    const res = await fetch(url);
-    renderRadio(await res.json());
-  } catch { grid.innerHTML = '<div style="padding:20px">تأكد من اتصال الإنترنت.</div>'; }
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+    const j = await r.json();
+    const t = Math.round(j.current_weather.temperature) + '°C';
+    document.getElementById('weatherTemp').textContent = t;
+    document.getElementById('topTemp').textContent = t;
+  } catch {}
+}
+loadWeather();
+
+// Live GPS Speed & Heading
+if (navigator.geolocation) {
+  navigator.geolocation.watchPosition(pos => {
+    const spd = pos.coords.speed ? Math.round(pos.coords.speed * 3.6) : 0;
+    document.getElementById('speed').textContent = spd;
+    if (pos.coords.heading != null && !isNaN(pos.coords.heading)) {
+      const h = Math.round(pos.coords.heading);
+      document.getElementById('heading').textContent = h + '°';
+      const dirs = ['N','NE','E','SE','S','SW','W','NW'];
+      document.getElementById('headingDir').textContent = dirs[Math.round(h / 45) % 8];
+    }
+  }, () => {}, { enableHighAccuracy: true });
 }
 
-async function searchRadio() {
-  const q = document.getElementById('radioSearch').value.trim();
-  if (!q) return;
-  const res = await fetch(`https://de1.api.radio-browser.info/json/stations/byname/${encodeURIComponent(q)}?limit=30`);
-  renderRadio(await res.json());
-}
-
-function playRadio(name, url, card) {
+// Radio
+function playAudio(name, url, card) {
   document.querySelectorAll('.card').forEach(c => c.classList.remove('playing'));
   if (card) card.classList.add('playing');
   const a = document.getElementById('audioPlayer');
@@ -174,47 +248,97 @@ function playRadio(name, url, card) {
   document.getElementById('nowPlaying').textContent = '📻 ' + name;
 }
 
-function renderRadio(list) {
+async function loadRadio(country) {
   const grid = document.getElementById('radioGrid');
-  grid.innerHTML = '';
+  grid.innerHTML = '<div style="padding:16px">جاري التحميل...</div>';
+  const url = country === 'top'
+    ? 'https://de1.api.radio-browser.info/json/stations/topvote/40'
+    : `https://de1.api.radio-browser.info/json/stations/bycountry/${encodeURIComponent(country)}?limit=40&order=votes&reverse=true`;
+  try {
+    const list = await (await fetch(url)).json();
+    grid.innerHTML = '';
+    list.filter(s => s.url_resolved).forEach(s => {
+      const d = document.createElement('div'); d.className = 'card';
+      d.innerHTML = `<div class="card-title">${s.name}</div><div class="card-sub">${s.country||''}</div>`;
+      d.onclick = () => playAudio(s.name, s.url_resolved, d);
+      grid.appendChild(d);
+    });
+  } catch { grid.innerHTML = '<div style="padding:16px">تأكد من الإنترنت.</div>'; }
+}
+
+async function searchRadio() {
+  const q = document.getElementById('radioSearch').value.trim();
+  if (!q) return;
+  const list = await (await fetch(`https://de1.api.radio-browser.info/json/stations/byname/${encodeURIComponent(q)}?limit=30`)).json();
+  const grid = document.getElementById('radioGrid'); grid.innerHTML = '';
   list.filter(s => s.url_resolved).forEach(s => {
-    const item = { type: 'radio', name: s.name, url: s.url_resolved };
-    const d = document.createElement('div');
-    d.className = 'card';
-    d.innerHTML = `<button class="fav ${isFav(item.url)?'on':''}">❤️</button><div class="card-title">${s.name}</div><div class="card-sub">${s.country || ''}</div>`;
-    d.querySelector('.fav').onclick = (e) => toggleFav(item, e);
-    d.onclick = () => playRadio(s.name, s.url_resolved, d);
+    const d = document.createElement('div'); d.className = 'card';
+    d.innerHTML = `<div class="card-title">${s.name}</div><div class="card-sub">${s.country||''}</div>`;
+    d.onclick = () => playAudio(s.name, s.url_resolved, d);
     grid.appendChild(d);
   });
 }
 
+// Quran Stations
+const quranList = [
+  { name: 'إذاعة القرآن الكريم - مكة', url: 'https://backup.qurango.net/radio/tarateel' },
+  { name: 'مشاري العفاسي', url: 'https://backup.qurango.net/radio/mishary_alafasi' },
+  { name: 'ماهر المعيقلي', url: 'https://backup.qurango.net/radio/maher' },
+  { name: 'عبد الباسط عبد الصمد', url: 'https://backup.qurango.net/radio/abdulbasit_abdulsamad_mojawwad' },
+  { name: 'سعد الغامدي', url: 'https://backup.qurango.net/radio/saad_alghamdi' },
+  { name: 'ياسر الدوسري', url: 'https://backup.qurango.net/radio/yasser_aldosari' }
+];
+const qGrid = document.getElementById('quranGrid');
+quranList.forEach(q => {
+  const d = document.createElement('div'); d.className = 'card';
+  d.innerHTML = `<div class="card-title">📖 ${q.name}</div><div class="card-sub">بث مباشر 24/7</div>`;
+  d.onclick = () => playAudio(q.name, q.url, d);
+  qGrid.appendChild(d);
+});
+
+// IPTV
 function playHls(url, name) {
-  const video = document.getElementById('tvPlayer');
+  const v = document.getElementById('tvPlayer');
   if (hls) { hls.destroy(); hls = null; }
   if (Hls.isSupported()) {
-    hls = new Hls(); hls.loadSource(url); hls.attachMedia(video);
-    hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
-  } else { video.src = url; video.play(); }
+    hls = new Hls(); hls.loadSource(url); hls.attachMedia(v);
+    hls.on(Hls.Events.MANIFEST_PARSED, () => v.play());
+  } else { v.src = url; v.play(); }
   document.getElementById('nowPlaying').textContent = '📺 ' + name;
 }
-
-function playCustomStream() {
-  const u = document.getElementById('m3uUrl').value.trim();
-  if (u) playHls(u, 'بث مخصص');
-}
-
+function playCustomStream() { const u = document.getElementById('m3uUrl').value.trim(); if (u) playHls(u, 'بث مخصص'); }
 async function loadFreeIptv() {
-  const grid = document.getElementById('tvGrid');
-  grid.innerHTML = '<div style="padding:20px;color:#8aa7c7">جاري تحميل القنوات...</div>';
+  const grid = document.getElementById('tvGrid'); grid.innerHTML = '<div style="padding:16px">جاري التحميل...</div>';
   try {
-    const res = await fetch('https://iptv-org.github.io/iptv/languages/ara.m3u');
-    const lines = (await res.text()).split('\n');
-    const channels = [];
+    const lines = (await (await fetch('https://iptv-org.github.io/iptv/languages/ara.m3u')).text()).split('\n');
+    const chs = [];
     for (let i = 0; i < lines.length; i++) {
       if (lines[i].startsWith('#EXTINF:')) {
         const name = lines[i].split(',').pop().trim();
-        const url = (lines[i + 1] || '').trim();
-        if (url.startsWith('http')) channels.push({ type: 'tv', name, url });
+        const url = (lines[i+1]||'').trim();
+        if (url.startsWith('http')) chs.push({ name, url });
+      }
+    }
+    grid.innerHTML = '';
+    chs.slice(0, 60).forEach(ch => {
+      const d = document.createElement('div'); d.className = 'card';
+      d.innerHTML = `<div class="card-title">📺 ${ch.name}</div><div class="card-sub">بث مباشر</div>`;
+      d.onclick = () => playHls(ch.url, ch.name);
+      grid.appendChild(d);
+    });
+  } catch { grid.innerHTML = '<div style="padding:16px">تأكد من الإنترنت.</div>'; }
+}
+function goWeb() {
+  let u = document.getElementById('webUrl').value.trim();
+  if (u && !u.startsWith('http')) u = 'https://' + u;
+  document.getElementById('webFrame').src = u;
+}
+
+loadRadio('Jordan');
+loadFreeIptv();
+</script>
+</body>
+</html>hannels.push({ type: 'tv', name, url });
       }
     }
     grid.innerHTML = '';
