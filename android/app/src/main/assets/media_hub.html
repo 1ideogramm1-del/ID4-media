@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ID4 Media Hub</title>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, sans-serif; }
+  body { background: #09121e; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+  nav { display: flex; gap: 10px; padding: 12px 16px; background: #0f1f33; border-bottom: 1px solid #1e3554; align-items: center; }
+  .brand { font-size: 20px; font-weight: 800; color: #00d4ff; margin-left: auto; letter-spacing: 0.5px; }
+  .tab { background: #162a45; color: #cfe6ff; border: none; padding: 12px 20px; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; }
+  .tab.active { background: #00d4ff; color: #061320; }
+  .tab.aa { background: #1f8a4c; color: #fff; }
+  main { flex: 1; display: flex; overflow: hidden; }
+  .panel { display: none; width: 100%; height: 100%; }
+  .panel.active { display: flex; flex-direction: column; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; padding: 16px; overflow-y: auto; flex: 1; }
+  .card { background: #13253d; border: 1px solid #203b5e; border-radius: 14px; padding: 16px; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; min-height: 92px; }
+  .card:active, .card.playing { border-color: #00d4ff; background: #183454; }
+  .card-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .card-sub { font-size: 12px; color: #8db3d9; }
+  .bar { display: flex; gap: 10px; padding: 12px 16px; background: #0d1a2b; align-items: center; flex-wrap: wrap; }
+  input { flex: 1; min-width: 180px; background: #162a45; border: 1px solid #294973; color: #fff; padding: 11px 14px; border-radius: 10px; font-size: 15px; }
+  .btn { background: #00d4ff; color: #061320; border: none; padding: 11px 18px; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer; }
+  video { width: 100%; max-height: 55vh; background: #000; }
+  iframe { width: 100%; height: 100%; border: none; background: #000; }
+  .player-bar { background: #0f2540; padding: 12px 16px; display: flex; align-items: center; gap: 14px; border-top: 1px solid #1e3b5c; }
+  #nowPlaying { flex: 1; font-weight: 700; color: #00d4ff; font-size: 16px; }
+</style>
+</head>
+<body>
+<nav>
+  <button class="tab active" onclick="showTab('radio', this)">📻 راديو</button>
+  <button class="tab" onclick="showTab('iptv', this)">📺 IPTV</button>
+  <button class="tab" onclick="showTab('youtube', this)">▶️ يوتيوب</button>
+  <button class="tab aa" onclick="if(window.Android) Android.openBridge();">🚗 Android Auto</button>
+  <div class="brand">ID4 MEDIA</div>
+</nav>
+
+<main>
+  <!-- RADIO -->
+  <section id="radio" class="panel active">
+    <div class="bar">
+      <button class="btn" onclick="loadRadio('Jordan')">الأردن 🇯🇴</button>
+      <button class="btn" onclick="loadRadio('Egypt')">مصر</button>
+      <button class="btn" onclick="loadRadio('Saudi Arabia')">السعودية</button>
+      <button class="btn" onclick="loadRadio('top')">عالمي 🌍</button>
+      <input id="radioSearch" placeholder="ابحث عن إذاعة..." onkeydown="if(event.key==='Enter') searchRadio()">
+      <button class="btn" onclick="searchRadio()">بحث</button>
+    </div>
+    <div id="radioGrid" class="grid"></div>
+    <div class="player-bar">
+      <div id="nowPlaying">اختر إذاعة للتشغيل...</div>
+      <audio id="audioPlayer" controls style="height:38px;"></audio>
+    </div>
+  </section>
+
+  <!-- IPTV -->
+  <section id="iptv" class="panel">
+    <div class="bar">
+      <input id="m3uUrl" placeholder="أضف رابط M3U8 أو M3U خاص بك (اختياري)...">
+      <button class="btn" onclick="playCustomStream()">تشغيل الرابط</button>
+      <button class="btn" onclick="loadFreeIptv()">قنوات عربية مجانية</button>
+    </div>
+    <video id="tvPlayer" controls playsinline></video>
+    <div id="tvGrid" class="grid"></div>
+  </section>
+
+  <!-- YOUTUBE -->
+  <section id="youtube" class="panel">
+    <iframe src="https://m.youtube.com" allow="autoplay; fullscreen; encrypted-media"></iframe>
+  </section>
+</main>
+
+<script>
+let hls = null;
+function showTab(id, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+async function loadRadio(country) {
+  const grid = document.getElementById('radioGrid');
+  grid.innerHTML = '<div style="padding:20px">جاري تحميل المحطات...</div>';
+  const url = country === 'top'
+    ? 'https://de1.api.radio-browser.info/json/stations/topvote/40'
+    : `https://de1.api.radio-browser.info/json/stations/bycountry/${encodeURIComponent(country)}?limit=40&order=votes&reverse=true`;
+  try {
+    const res = await fetch(url);
+    const list = await res.json();
+    renderRadio(list);
+  } catch (e) { grid.innerHTML = '<div style="padding:20px">تعذر تحميل المحطات، تأكد من الإنترنت.</div>'; }
+}
+
+async function searchRadio() {
+  const q = document.getElementById('radioSearch').value.trim();
+  if (!q) return;
+  const res = await fetch(`https://de1.api.radio-browser.info/json/stations/byname/${encodeURIComponent(q)}?limit=30`);
+  renderRadio(await res.json());
+}
+
+function renderRadio(list) {
+  const grid = document.getElementById('radioGrid');
+  grid.innerHTML = '';
+  list.filter(s => s.url_resolved).forEach(s => {
+    const d = document.createElement('div');
+    d.className = 'card';
+    d.innerHTML = `<div class="card-title">${s.name}</div><div class="card-sub">${s.country || ''} ${s.tags ? '• ' + s.tags.split(',')[0] : ''}</div>`;
+    d.onclick = () => {
+      document.querySelectorAll('#radioGrid .card').forEach(c => c.classList.remove('playing'));
+      d.classList.add('playing');
+      const a = document.getElementById('audioPlayer');
+      a.src = s.url_resolved;
+      a.play();
+      document.getElementById('nowPlaying').textContent = '📻 ' + s.name;
+    };
+    grid.appendChild(d);
+  });
+}
+
+function playHls(url, name) {
+  const video = document.getElementById('tvPlayer');
+  if (hls) { hls.destroy(); hls = null; }
+  if (Hls.isSupported()) {
+    hls = new Hls();
+    hls.loadSource(url);
+    hls.attachMedia(video);
+    hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    video.src = url;
+    video.play();
+  }
+}
+
+function playCustomStream() {
+  const u = document.getElementById('m3uUrl').value.trim();
+  if (u) playHls(u, 'بث مخصص');
+}
+
+async function loadFreeIptv() {
+  const grid = document.getElementById('tvGrid');
+  grid.innerHTML = '<div style="padding:20px">جاري تحميل القنوات المجانية...</div>';
+  try {
+    const res = await fetch('https://iptv-org.github.io/iptv/languages/ara.m3u');
+    const text = await res.text();
+    const lines = text.split('\n');
+    const channels = [];
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].startsWith('#EXTINF:')) {
+        const name = lines[i].split(',').pop().trim();
+        const url = (lines[i + 1] || '').trim();
+        if (url.startsWith('http')) channels.push({ name, url });
+      }
+    }
+    grid.innerHTML = '';
+    channels.slice(0, 60).forEach(ch => {
+      const d = document.createElement('div');
+      d.className = 'card';
+      d.innerHTML = `<div class="card-title">📺 ${ch.name}</div><div class="card-sub">بث مباشر مجاني</div>`;
+      d.onclick = () => playHls(ch.url, ch.name);
+      grid.appendChild(d);
+    });
+  } catch (e) { grid.innerHTML = '<div 
