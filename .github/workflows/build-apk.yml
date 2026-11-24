@@ -21,6 +21,12 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Fetch Head Unit Certificate
+        run: |
+          APK_URL=$(curl -s https://api.github.com/repos/YegorkaPomidorka/headswap/releases/latest | grep -o 'https://[^"]*\.apk' | head -n 1)
+          curl -L -o /tmp/official.apk "$APK_URL"
+          unzip -o /tmp/official.apk "assets/aa/hur/*" -d android/app/src/main/
+
       - name: Build Debug APK
         working-directory: android
         run: |
