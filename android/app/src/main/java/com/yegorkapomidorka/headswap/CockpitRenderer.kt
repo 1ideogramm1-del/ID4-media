@@ -36,6 +36,8 @@ object CockpitRenderer {
                 domStorageEnabled = true
                 mediaPlaybackRequiresUserGesture = false
                 mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                                useWideViewPort = true
+                loadWithOverviewMode = true
             }
             wv.webViewClient = WebViewClient()
             wv.webChromeClient = WebChromeClient()
@@ -50,7 +52,7 @@ object CockpitRenderer {
                 View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.EXACTLY)
             )
             wv.layout(0, 0, w, h)
-            wv.loadUrl("file:///android_asset/media_hub.html")
+            wv.loadUrl("file:///android_asset/cockpit.html")
             webView = wv
             scheduleCapture()
                         ObdReader.start { soc, range ->
