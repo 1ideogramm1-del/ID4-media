@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ID4 Drive Information</title>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; user-select: none; }
+  html, body { width: 1280px; height: 720px; overflow: hidden; background: #0b0c0e; color: #e8eaed; }
+  body { display: flex; flex-direction: column; padding: 18px 26px 20px; background: radial-gradient(circle at 50% 0%, #17191d 0%, #0b0c0e 70%); }
+  .hdr { display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.12); margin-bottom: 16px; }
+  .hdr-l { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 500; letter-spacing: 1.4px; color: #e2e5e9; }
+  .hdr-plus { width: 22px; height: 22px; border: 1.5px solid #9aa0a6; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #e2e5e9; }
+  .hdr-r { font-size: 13px; letter-spacing: 1.4px; color: #34d399; font-weight: 700; }
+  .stage { flex: 1; position: relative; overflow: hidden; }
+  .panel { display: none; width: 100%; height: 100%; }
+  .panel.active { display: flex; flex-direction: column; }
+  .dash { flex: 1; display: grid; grid-template-columns: 1fr 1.45fr 0.95fr; gap: 20px; align-items: stretch; }
+  .col { display: flex; flex-direction: column; justify-content: space-between; padding: 4px 10px; }
+  .lbl-main { font-size: 13px; letter-spacing: 1.4px; color: #cfd4da; font-weight: 600; }
+  .lbl-sub { font-size: 10px; letter-spacing: 1.1px; color: #6e747c; margin-top: 3px; text-transform: uppercase; }
+  .col-mid { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .col-bot { text-align: center; font-size: 11px; letter-spacing: 1.2px; color: #7e858e; line-height: 1.5; }
+  .right-col { display: flex; flex-direction: column; justify-content: space-between; padding: 4px 10px; }
+  .sign-box { display: flex; flex-direction: column; align-items: center; margin: 10px 0; }
+  .sign { width: 106px; height: 106px; border-radius: 50%; background: #eef1f5; border: 12px solid #d92638; display: flex; align-items: center; justify-content: center; font-size: 34px; font-weight: 900; color: #111; }
+  .wait-txt { margin-top: 8px; font-size: 18px; font-weight: 700; letter-spacing: 2px; color: #e8eaed; }
+  .temp-box { text-align: center; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.08); }
+  .temp-val { font-size: 42px; font-weight: 700; color: #fff; margin: 4px 0; }
+  .dock { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; margin-top: 14px; height: 88px; }
+  .dbtn { background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.18); border-radius: 8px; color: #d8dce2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; }
+  .dbtn.active { background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.45); color: #fff; }
+  .dbtn svg { width: 28px; height: 28px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .dbtn span { font-size: 11px; letter-spacing: 1px; font-weight: 600; text-transform: uppercase; }
+  .sub-hdr { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .back-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .grid { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; overflow-y: auto; }
+  .card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 16px; cursor: pointer; }
+  .card.on { border-color: #d92638; background: rgba(217,38,56,0.12); }
+  .card-t { font-size: 15px; font-weight: 700; }
+  .card-s { font-size: 12px; color: #8c929a; margin-top: 5px; }
+  iframe { flex: 1; width: 100%; border: none; border-radius: 8px; background: #000; }
+  video { width: 100%; height: 260px; background: #000; border-radius: 8px; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+  <div class="hdr">
+    <div class="hdr-l"><span class="hdr-plus">+</span> DRIVE INFORMATION</div>
+    <div class="hdr-r" id="evBat">⚡ OBD2 • --% • --- km</div>
+  </div>
+  <div class="stage">
+    <section id="p-home" class="panel active">
+      <div class="dash">
+        <div class="col">
+          <div><div class="lbl-main">DIRECTION</div><div class="lbl-sub">OCU NAVIGATION</div></div>
+          <div class="col-mid">
+            <svg width="205" height="205" viewBox="0 0 220 220">
+              <circle cx="110" cy="110" r="92" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"/>
+              <g id="compassTicks" stroke="rgba(255,255,255,0.55)" stroke-width="1.5"></g>
+              <polygon points="110,16 103,32 117,32" fill="#d92638"/>
+              <text x="110" y="47" text-anchor="middle" fill="#d92638" font-size="13" font-weight="700">N</text>
+              <text x="180" y="114" text-anchor="middle" fill="#cfd4da" font-size="13" font-weight="700">E</text>
+              <text x="110" y="185" text-anchor="middle" fill="#cfd4da" font-size="13" font-weight="700">S</text>
+              <text x="40" y="114" text-anchor="middle" fill="#cfd4da" font-size="13" font-weight="700">W</text>
+              <circle cx="110" cy="110" r="44" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+              <text id="degText" x="110" y="121" text-anchor="middle" fill="#fff" font-size="32" font-weight="500">71°</text>
+            </svg>
+          </div>
+          <div class="col-bot">VEHICLE COURSE<br>NAVIGATION / OCU</div>
+        </div>
+        <div class="col">
+          <div><div class="lbl-main">SPEED</div><div class="lbl-sub">LOCAL VEHICLE DATA</div></div>
+          <div class="col-mid">
+            <svg width="295" height="295" viewBox="0 0 320 320">
+              <circle cx="160" cy="160" r="142" fill="#0d0f12" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>
+              <g id="speedTicks"></g>
+              <text x="160" y="218" text-anchor="middle" fill="#9aa0a6" font-size="16" font-weight="600">km/h</text>
+              <g id="speedNeedle" transform="rotate(-135 160 160)"><line x1="160" y1="160" x2="160" y2="38" stroke="#e02438" stroke-width="4.5" stroke-linecap="round"/></g>
+              <circle cx="160" cy="160" r="12" fill="#181b20" stroke="#e02438" stroke-width="3"/>
+            </svg>
+          </div>
+          <div class="col-bot">UPDATED EVERY SECOND</div>
+        </div>
+        <div class="right-col">
+          <div>
+            <div class="lbl-main">ROAD SIGN</div><div class="lbl-sub">CAMERA MAP</div>
+            <div class="sign-box"><div class="sign">--</div><div class="wait-txt">WAIT</div></div>
+          </div>
+          <div class="temp-box">
+            <div class="lbl-sub">OUTSIDE</div><div class="temp-val" id="tempVal">24.0°C</div><div class="lbl-sub">VEHICLE TEMPERATURE</div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section id="p-media" class="panel">
+      <div class="sub-hdr">
+        <button class="back-btn" onclick="openPanel('p-home')">← Back</button>
+        <button class="back-btn" onclick="loadRadio('Jordan')">Jordan</button>
+        <button class="back-btn" onclick="loadRadio('Egypt')">Egypt</button>
+        <button class="back-btn" onclick="loadRadio('Saudi Arabia')">Saudi Arabia</button>
+        <button class="back-btn" onclick="loadRadio('top')">Global</button>
+        <span id="nowPlaying" style="margin-left:auto;color:#cfd4da;font-size:14px;">Select a station...</span>
+      </div>
+      <div class="grid" id="radioGrid"></div>
+    </section>
+    <section id="p-yt" class="panel"><div class="sub-hdr"><button class="back-btn" onclick="openPanel('p-home')">← Back</button><span>YouTube</span></div><iframe src="https://m.youtube.com" allow="autoplay; fullscreen"></iframe></section>
+    <section id="p-web" class="panel"><div class="sub-hdr"><button class="back-btn" onclick="openPanel('p-home')">← Back</button><span>Browser</span></div><iframe src="https://www.google.com"></iframe></section>
+    <section id="p-quran" class="panel"><div class="sub-hdr"><button class="back-btn" onclick="openPanel('p-home')">← Back</button><span>Quran Live</span></div><div class="grid" id="quranGrid"></div></section>
+    <section id="p-weather" class="panel"><div class="sub-hdr"><button class="back-btn" onclick="openPanel('p-home')">← Back</button><span>Weather</span></div><div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;"><div style="font-size:76px;font-weight:800;" id="wBig">24.0°C</div><div style="font-size:22px;color:#9aa0a6;">Amman, Jordan</div></div></section>
+    <section id="p-tv" class="panel"><div class="sub-hdr"><button class="back-btn" onclick="openPanel('p-home')">← Back</button><span>Live TV</span></div><video id="tvPlayer" controls autoplay playsinline></video><div class="grid" id="tvGrid"></div></section>
+  </div>
+  <audio id="audioPlayer"></audio>
+  <div class="dock">
+    <button class="dbtn" onclick="if(window.CarBridge) CarBridge.switchToAA(); else openPanel('p-home', this);"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="12" rx="1.5"/><circle cx="17" cy="14" r="3.5"/><path d="M11 10h3.5"/></svg><span>APP CONNECT</span></button>
+    <button class="dbtn" onclick="openPanel('p-media', this)"><svg viewBox="0 0 24 24"><polygon points="8,5 19,12 8,19"/></svg><span>MEDIA</span></button>
+    <button class="dbtn" onclick="openPanel('p-yt', this)"><svg viewBox="0 0 24 24"><rect x="2.5" y="5.5" width="19" height="13" rx="3" fill="#e02438" stroke="none"/><polygon points="10,9 16,12 10,15" fill="#fff" stroke="none"/></svg><span>YOUTUBE</span></button>
+    <button class="dbtn" onclick="openPanel('p-web', this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a13 13 0 0 1 0 18M12 3a13 13 0 0 0 0 18"/></svg><span>BROWSER</span></button>
+    <button class="dbtn" onclick="openPanel('p-quran', this)"><svg viewBox="0 0 24 24"><path d="M3 6h6a3 3 0 0 1 3 3v10a2 2 0 0 0-2-2H3z" stroke="#38b2ac"/><path d="M21 6h-6a3 3 0 0 0-3 3v10a2 2 0 0 1 2-2h7z" stroke="#38b2ac"/></svg><span>QURAN</span></button>
+    <button class="dbtn" onclick="openPanel('p-weather', this)"><svg viewBox="0 0 24 24" stroke="#f6ad55"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span>WEATHER</span></button>
+    <button class="dbtn" onclick="openPanel('p-tv', this)"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><polygon points="10,8.5 15,11 10,13.5" fill="currentColor" stroke="none"/><path d="M8 21h8M12 17v4"/></svg><span>TV</span></button>
+  </div>
+<script>
+const st=document.getElementById('speedTicks');
+for(let v=0;v<=200;v+=5){const a=(-135+(v/200)*270)*Math.PI/180,m=v%20===0,r1=136,r2=m?120:128;st.innerHTML+=`<line x1="${160+Math.sin(a)*r1}" y1="${160-Math.cos(a)*r1}" x2="${160+Math.sin(a)*r2}" y2="${160-Math.cos(a)*r2}" stroke="${m?'#e8eaed':'rgba(255,255,255,0.4)'}" stroke-width="${m?2.2:1.2}"/>`;if(m)st.innerHTML+=`<text x="${160+Math.sin(a)*102}" y="${165-Math.cos(a)*102}" text-anchor="middle" fill="#cfd4da" font-size="14" font-weight="600">${v}</text>`;}
+const ct=document.getElementById('compassTicks');
+for(let a=0;a<360;a+=15){const r=a*Math.PI/180,r1=92,r2=a%45===0?80:86;ct.innerHTML+=`<line x1="${110+Math.sin(r)*r1}" y1="${110-Math.cos(r)*r1}" x2="${110+Math.sin(r)*r2}" y2="${110-Math.cos(r)*r2}"/>`;}
+function setSpeed(k){document.getElementById('speedNeedle').setAttribute('transform',`rotate(${-135+(Math.max(0,Math.min(200,k))/200)*270} 160 160)`);}
+function openPanel(id,btn){document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.dbtn').forEach(b=>b.classList.remove('active'));document.getElementById(id).classList.add('active');if(btn)btn.classList.add('active');}
+window.__carTap=function(x,y){const el=document.elementFromPoint(x,y);if(el)el.click();};
+window.__setBattery=function(s,r){document.getElementById('evBat').textContent='⚡ '+s+'% • '+r+' km';};
+fetch('https://api.open-meteo.com/v1/forecast?latitude=31.9539&longitude=35.9106&current_weather=true').then(r=>r.json()).then(j=>{const t=j.current_weather.temperature.toFixed(1)+'°C';document.getElementById('tempVal').textContent=t;document.getElementById('wBig').textContent=t;}).catch(()=>{});
+if(navigator.geolocation){navigator.geolocation.watchPosition(p=>{setSpeed(p.coords.speed?p.coords.speed*3.6:0);if(p.coords.heading!=null&&!isNaN(p.coords.heading))document.getElementById('degText').textContent=Math.round(p.coords.heading)+'°';},()=>{},{enableHighAccuracy:true});}
+function playAudio(n,u,el){document.querySelectorAll('.card').forEach(c=>c.classList.remove('on'));if(el)el.classList.add('on');const a=document.getElementById('audioPlayer');a.src=u;a.play();document.getElementById('nowPlaying').textContent=n;}
+function loadRadio(c){const g=document.getElementById('radioGrid');g.innerHTML='Loading...';const u=c==='top'?'https://de1.api.radio-browser.info/json/stations/topvote/24':'https://de1.api.radio-browser.info/json/stations/bycountry/'+encodeURIComponent(c)+'?limit=24&order=votes&reverse=true';fetch(u).then(r=>r.json()).then(l=>{g.innerHTML='';l.filter(s=>s.url_resolved).forEach(s=>{const d=document.createElement('div');d.className='card';d.innerHTML=`<div class="card-t">${s.name}</div><div class="card-s">${s.country||''}</div>`;d.onclick=()=>playAudio(s.name,s.url_resolved,d);g.appendChild(d);});}).catch(()=>{g.innerHTML='No internet';});}
+[['Makkah Quran Radio','https://backup.qurango.net/radio/tarateel'],['Mishary Alafasy','https://backup.qurango.net/radio/mishary_alafasi'],['Maher Al-Muaiqly','https://backup.qurango.net/radio/maher'],['Abdul Basit','https://backup.qurango.net/radio/abdulbasit_abdulsamad_mojawwad'],['Saad Al-Ghamdi','https://backup.qurango.net/radio/saad_alghamdi'],['Yasser Al-Dosari','https://backup.qurango.net/radio/yasser_aldosari']].forEach(q=>{const d=document.createElement('div');d.className='card';d.innerHTML=`<div class="card-t">${q[0]}</div><div class="card-s">Live 24/7</div>`;d.onclick=()=>playAudio(q[0],q[1],d);document.getElementById('quranGrid').appendChild(d);});
+let hls=null;
+function playTv(u){const v=document.getElementById('tvPlayer');if(hls){hls.destroy();hls=null;}if(Hls.isSupported()){hls=new Hls();hls.loadSource(u);hls.attachMedia(v);hls.on(Hls.Events.MANIFEST_PARSED,()=>v.play());}else{v.src=u;v.play();}}
+fetch('https://iptv-org.github.io/iptv/languages/ara.m3u').then(r=>r.text()).then(t=>{const ls=t.split('\n'),g=document.getElementById('tvGrid');let n=0;for(let i=0;i<ls.length&&n<24;i++){if(ls[i].startsWith('#EXTINF:')){const nm=ls[i].split(',').pop().trim(),u=(ls[i+1]||'').trim();if(u.startsWith('http')){n++;const d=document.createElement('div');d.className='card';d.innerHTML=`<div class="card-t">${nm}</div><div class="card-s">Live TV</div>`;d.onclick=()=>playTv(u);g.appendChild(d);}}}}).catch(()=>{});
+loadRadio('Jordan');
+</script>
+</body>
+            </html>
